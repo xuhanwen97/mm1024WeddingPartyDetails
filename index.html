@@ -81,6 +81,23 @@
   .map-link img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
   footer { text-align: center; padding: 0 16px 32px; position: relative; }
 
+  /* Persona picker and "viewing as" bar */
+  .picker { max-width: 720px; margin: 8px auto 40px; padding: 0 16px; text-align: center; }
+  .picker h2 { font-size: 2.2rem; margin: 12px 0 4px; }
+  .picker > p { color: var(--muted); margin: 0 0 20px; }
+  .persona-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .persona { display: flex; flex-direction: column; gap: 4px; padding: 22px 18px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; text-align: left; transition: border-color .15s, transform .15s; }
+  .persona:hover, .persona:focus-visible { border-color: var(--accent); transform: translateY(-2px); outline: none; }
+  .persona-title { font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.6rem; font-weight: 600; color: var(--accent); }
+  .persona-sub { font-size: .9rem; color: var(--muted); }
+  .picker-skip { margin-top: 18px; font-size: .95rem; }
+  @media (max-width: 560px) { .persona-grid { grid-template-columns: 1fr; } .persona { padding: 18px 16px; } }
+  .viewing { text-align: center; font-size: .9rem; color: var(--muted); margin: -2px 16px 10px; }
+  .viewing strong { color: var(--ink); }
+  .tabs a.mine { position: relative; border-color: var(--accent); }
+  .tabs a.mine::after { content: "You"; position: absolute; top: -8px; right: -6px; font-size: .6rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; background: var(--accent); color: var(--accent-ink); padding: 1px 5px; border-radius: 6px; }
+  .tab-row { padding-top: 6px; }
+
   /* Hidden ducks */
   .duck { position: absolute; width: 34px; height: auto; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; z-index: 2; transition: transform .2s; }
   .duck:hover { transform: scale(1.15) rotate(-6deg); }
@@ -119,6 +136,18 @@
     <h1>Maddie &amp; Michael's Wedding Weekend</h1>
     <p>Thursday, Oct 22 - Saturday, Oct 24, 2026 &middot; In The Woods, Cartersville, GA</p>
   </header>
+  <div id="viewing" class="viewing" hidden>Viewing as <strong id="viewing-name"></strong> <span aria-hidden="true">&middot;</span> <a href="#start">Change</a></div>
+  <section id="picker" class="picker" hidden>
+    <h2>Who are you?</h2>
+    <p>Pick your group to see your own schedule first. You can switch anytime.</p>
+    <div class="persona-grid">
+      <a class="persona" href="#bridal-party" data-persona="bridal-party"><span class="persona-title">Bridal Party</span><span class="persona-sub">Bridesmaids</span></a>
+      <a class="persona" href="#groomsmen" data-persona="groomsmen"><span class="persona-title">Groomsmen</span><span class="persona-sub">The guys standing with Michael</span></a>
+      <a class="persona" href="#maddie-s-family" data-persona="maddie-s-family"><span class="persona-title">Maddie&#39;s Family</span><span class="persona-sub">The Brickell side</span></a>
+      <a class="persona" href="#michael-s-family" data-persona="michael-s-family"><span class="persona-title">Michael&#39;s Family</span><span class="persona-sub">Michael&#39;s side</span></a>
+    </div>
+    <p class="picker-skip"><a href="#weekend-at-a-glance" data-persona="">Just browsing? See the weekend at a glance</a></p>
+  </section>
   <div id="content"></div>
   <footer><button id="forget" type="button">Lock this device</button><img class="duck duck-foot" src="duck.png" alt="" data-duck="6" draggable="false"></footer>
 </div>
@@ -170,11 +199,26 @@
 
   // One section visible at a time; the URL hash picks it, so links and the back button work.
   let pdfDone = false, mapDone = false;
+  // The persona picked on the landing page is remembered per device; an empty hash opens it.
+  const PKEY = "mm1024-persona";
+  const getPersona = () => { try { return localStorage.getItem(PKEY) || ""; } catch (e) { return ""; } };
+  const setPersona = (v) => { try { v ? localStorage.setItem(PKEY, v) : localStorage.removeItem(PKEY); } catch (e) {} };
   function setupTabs() {
     const tabs = [...document.querySelectorAll(".tabs a")];
+    const nav = document.querySelector(".tabs"), main = document.querySelector("#content main"), picker = document.getElementById("picker");
+    document.querySelectorAll("[data-persona]").forEach((a) => a.addEventListener("click", () => setPersona(a.dataset.persona)));
     const show = () => {
       const id = (location.hash || "").slice(1);
-      const target = document.getElementById(id) && tabs.some((t) => t.dataset.tab === id) ? id : tabs[0].dataset.tab;
+      const persona = getPersona();
+      const valid = (x) => x && document.getElementById(x) && tabs.some((t) => t.dataset.tab === x);
+      const picking = id === "start" || (!valid(id) && !valid(persona));
+      picker.hidden = !picking; nav.hidden = picking; main.hidden = picking;
+      const mine = tabs.find((t) => t.dataset.tab === persona);
+      tabs.forEach((t) => t.classList.toggle("mine", t === mine));
+      document.getElementById("viewing").hidden = picking || !mine;
+      if (mine) document.getElementById("viewing-name").textContent = mine.textContent;
+      if (picking) return;
+      const target = valid(id) ? id : persona;
       document.querySelectorAll("[data-section]").forEach((s) => { s.hidden = s.id !== target; });
       tabs.forEach((t) => {
         const on = t.dataset.tab === target;
