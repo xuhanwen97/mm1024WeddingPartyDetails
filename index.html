@@ -77,13 +77,33 @@
   .pdf-pages canvas { display: block; width: 100%; height: auto; margin: 0 0 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
   .map-link { display: block; }
   .map-link img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
-  footer { text-align: center; padding: 0 16px 32px; }
+  footer { text-align: center; padding: 0 16px 32px; position: relative; }
+
+  /* Hidden ducks */
+  .duck { position: absolute; width: 34px; height: auto; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; z-index: 2; transition: transform .2s; }
+  .duck:hover { transform: scale(1.15) rotate(-6deg); }
+  .duck.wiggle { animation: wiggle .6s ease; }
+  @keyframes wiggle { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-18deg) scale(1.2); } 40% { transform: rotate(14deg) scale(1.2); } 60% { transform: rotate(-10deg); } 80% { transform: rotate(6deg); } }
+  .duck-anchor { position: relative; }
+  .duck-anchor:has(.duck-under) { margin-bottom: 26px; }
+  .duck-anchor:has(.duck-over) { margin-top: 30px; }
+  .duck-under { right: 10px; bottom: -22px; width: 30px; }
+  .duck-over { right: 18px; top: -27px; width: 30px; }
+  .duck-map { left: 8px; bottom: 8px; width: 40px; }
+  .duck-inline { position: relative; width: 20px; vertical-align: -3px; margin-left: 4px; }
+  .duck-lock { right: -10px; top: -24px; width: 38px; }
+  .duck-foot { position: relative; width: 22px; vertical-align: middle; margin-left: 6px; opacity: .85; }
+  .lock form { position: relative; }
+  .quack { position: fixed; z-index: 20; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: .9rem; padding: 10px 16px; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.25); pointer-events: none; opacity: 0; transition: opacity .2s; }
+  .quack.show { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .duck, .duck.wiggle { animation: none; transition: none; } }
   footer button { background: none; border: 0; color: var(--muted); font: inherit; font-size: .85rem; text-decoration: underline; cursor: pointer; }
 </style>
 </head>
 <body>
 <div id="lock" class="lock" hidden>
   <form id="lock-form" autocomplete="off">
+    <img class="duck duck-lock" src="duck.png" alt="" data-duck="1" draggable="false">
     <h1>Maddie &amp; Michael</h1>
     <p>Wedding party details. Enter the password to continue.</p>
     <input id="pw" type="password" placeholder="Password" aria-label="Password" autofocus>
@@ -98,9 +118,28 @@
     <p>Thursday, Oct 22 - Saturday, Oct 24, 2026 &middot; In The Woods, Cartersville, GA</p>
   </header>
   <div id="content"></div>
-  <footer><button id="forget" type="button">Lock this device</button></footer>
+  <footer><button id="forget" type="button">Lock this device</button><img class="duck duck-foot" src="duck.png" alt="" data-duck="6" draggable="false"></footer>
 </div>
 
+<div id="quack" class="quack" role="status" aria-live="polite"></div>
+<script>
+// Ducks: tap one to make it quack; found ducks are remembered on this device.
+(() => {
+  const TOTAL = 6, KEY = "mm1024-ducks";
+  const load = () => { try { return new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch (e) { return new Set(); } };
+  let timer;
+  document.addEventListener("click", (e) => {
+    const d = e.target.closest && e.target.closest(".duck"); if (!d) return;
+    e.preventDefault(); e.stopPropagation();
+    d.classList.remove("wiggle"); void d.offsetWidth; d.classList.add("wiggle");
+    const found = load(); found.add(d.dataset.duck);
+    try { localStorage.setItem(KEY, JSON.stringify([...found])); } catch (x) {}
+    const q = document.getElementById("quack");
+    q.textContent = found.size >= TOTAL ? "Quack! You found all " + TOTAL + " ducks!" : "Quack! Duck " + found.size + " of " + TOTAL + " found";
+    q.classList.add("show"); clearTimeout(timer); timer = setTimeout(() => q.classList.remove("show"), 1800);
+  }, true);
+})();
+</script>
 <script>
 (() => {
   const STORE = "mm1024-key";
