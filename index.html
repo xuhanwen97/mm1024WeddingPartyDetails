@@ -116,6 +116,18 @@
   .quack { position: fixed; z-index: 20; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: .9rem; padding: 10px 16px; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.25); pointer-events: none; opacity: 0; transition: opacity .2s; }
   .quack.show { opacity: 1; }
   @media (prefers-reduced-motion: reduce) { .duck, .duck.wiggle { animation: none; transition: none; } }
+  /* Where are Maddie & Michael? Live status, same for every viewer. */
+  .status { max-width: 820px; margin: 0 auto 12px; padding: 0 16px; }
+  .status-card { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 12px; padding: 12px 16px; }
+  .status-label { display: flex; align-items: center; gap: 8px; font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .status-where { font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.5rem; font-weight: 600; line-height: 1.2; margin: 4px 0 2px; }
+  .status-where a { color: inherit; text-decoration: underline dotted; text-decoration-color: var(--accent); text-underline-offset: 4px; }
+  .status-doing { margin: 0; }
+  .status-meta { margin: 4px 0 0; font-size: .85rem; color: var(--muted); }
+  .status-meta strong { color: var(--ink); font-weight: 600; }
+  @media (prefers-reduced-motion: reduce) { .status-dot { animation: none; } }
   footer button { background: none; border: 0; color: var(--muted); font: inherit; font-size: .85rem; text-decoration: underline; cursor: pointer; }
 </style>
 </head>
@@ -136,6 +148,14 @@
     <h1>Maddie &amp; Michael's Wedding Weekend</h1>
     <p>Thursday, Oct 22 - Saturday, Oct 24, 2026 &middot; In The Woods, Cartersville, GA</p>
   </header>
+  <aside id="status" class="status" aria-live="polite" hidden>
+    <div class="status-card">
+      <div class="status-label"><span class="status-dot" aria-hidden="true"></span>Where are Maddie &amp; Michael?</div>
+      <p class="status-where" id="status-where"></p>
+      <p class="status-doing" id="status-doing"></p>
+      <p class="status-meta"><span id="status-until"></span><span id="status-updated"></span></p>
+    </div>
+  </aside>
   <div id="viewing" class="viewing" hidden>Viewing as <strong id="viewing-name"></strong> <span aria-hidden="true">&middot;</span> <a href="#start">Change</a></div>
   <section id="picker" class="picker" hidden>
     <h2>Who are you?</h2>
@@ -195,6 +215,35 @@
     document.getElementById("lock").hidden = true;
     document.getElementById("app").hidden = false;
     setupTabs();
+    loadStatus();
+    setInterval(loadStatus, 60000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) loadStatus(); });
+  }
+
+  // status.json is encrypted with the same key as the vault and updated by commit (see status.py).
+  async function loadStatus() {
+    try {
+      const item = await (await fetch("status.json", { cache: "no-cache" })).json();
+      const st = JSON.parse(new TextDecoder().decode(await decrypt(item)));
+      const where = document.getElementById("status-where");
+      where.textContent = "";
+      if (st.map) {
+        const a = document.createElement("a");
+        a.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(st.map);
+        a.target = "_blank"; a.rel = "noopener"; a.textContent = st.where;
+        where.appendChild(a);
+      } else where.textContent = st.where;
+      document.getElementById("status-doing").textContent = st.doing || "";
+      document.getElementById("status-doing").hidden = !st.doing;
+      const until = document.getElementById("status-until");
+      until.innerHTML = "";
+      if (st.until) { until.append("Here until "); const b = document.createElement("strong"); b.textContent = st.until; until.append(b, " \u00b7 "); }
+      const t = new Date(st.updated), mins = Math.round((Date.now() - t) / 60000);
+      const ago = mins < 1 ? "just now" : mins < 60 ? mins + " min ago" : mins < 1440 ? Math.round(mins / 60) + " hr ago" : Math.round(mins / 1440) + " days ago";
+      document.getElementById("status-updated").textContent = "Updated " +
+        t.toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" }) + " (" + ago + ")";
+      document.getElementById("status").hidden = false;
+    } catch (e) { /* No status yet, or offline: keep whatever is showing. */ }
   }
 
   // One section visible at a time; the URL hash picks it, so links and the back button work.
