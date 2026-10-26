@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>M&amp;M Wedding Weekend</title>
+<title>M&amp;M Mini-Moon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -128,6 +128,16 @@
   .status-meta { margin: 4px 0 0; font-size: .85rem; color: var(--muted); }
   .status-meta strong { color: var(--ink); font-weight: 600; }
   @media (prefers-reduced-motion: reduce) { .status-dot { animation: none; } }
+  /* Mini-moon itinerary */
+  .mm-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .85rem; color: var(--muted); margin: 8px 0 4px; }
+  .mm-day { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px 16px 12px; margin: 16px 0; }
+  .mm-day h3 { margin-bottom: 0; }
+  .mm-sub { margin: 2px 0 4px; color: var(--muted); font-size: .9rem; }
+  .mm-day h4 { font-size: .75rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 14px 0 4px; }
+  ul.mm-list { list-style: none; padding: 0; }
+  .mm-list li { display: flex; gap: 10px; margin: 8px 0; }
+  .mm-dot { flex: 0 0 auto; line-height: 1.55; }
+  .mm-desc { font-size: .9rem; color: var(--muted); }
   footer button { background: none; border: 0; color: var(--muted); font: inherit; font-size: .85rem; text-decoration: underline; cursor: pointer; }
 </style>
 </head>
@@ -136,7 +146,7 @@
   <form id="lock-form" autocomplete="off">
     <img class="duck duck-lock" src="duck.png" alt="" data-duck="1" draggable="false">
     <h1>Maddie &amp; Michael</h1>
-    <p>Wedding party details. Enter the password to continue.</p>
+    <p>Just for us. Enter the password to continue.</p>
     <input id="pw" type="password" placeholder="Password" aria-label="Password" autofocus>
     <button class="btn" type="submit">Unlock</button>
     <p id="err" class="error" role="alert"></p>
@@ -145,8 +155,8 @@
 
 <div id="app" hidden>
   <header class="top">
-    <h1>Maddie &amp; Michael's Wedding Weekend</h1>
-    <p>Thursday, Oct 22 - Saturday, Oct 24, 2026 &middot; In The Woods, Cartersville, GA</p>
+    <h1>Maddie &amp; Michael's Mini-Moon</h1>
+    <p>Monday, Oct 26 - Wednesday, Oct 28, 2026 &middot; Virginia's Blue Ridge</p>
   </header>
   <aside id="status" class="status" aria-live="polite" hidden>
     <div class="status-card">
@@ -260,14 +270,14 @@
       const id = (location.hash || "").slice(1);
       const persona = getPersona();
       const valid = (x) => x && document.getElementById(x) && tabs.some((t) => t.dataset.tab === x);
-      const picking = id === "start" || (!valid(id) && !valid(persona));
+      const picking = id === "start";
       picker.hidden = !picking; nav.hidden = picking; main.hidden = picking;
       const mine = tabs.find((t) => t.dataset.tab === persona);
       tabs.forEach((t) => t.classList.toggle("mine", t === mine));
       document.getElementById("viewing").hidden = picking || !mine;
       if (mine) document.getElementById("viewing-name").textContent = mine.textContent;
       if (picking) return;
-      const target = valid(id) ? id : persona;
+      const target = valid(id) ? id : "minimoon";
       document.querySelectorAll("[data-section]").forEach((s) => { s.hidden = s.id !== target; });
       tabs.forEach((t) => {
         const on = t.dataset.tab === target;
